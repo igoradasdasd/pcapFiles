@@ -16,18 +16,19 @@ class Merge
 public:
 	Merge(std::string file1, std::string file2, std::string resultFile)
 	{
-		f1.open(file1);
-		f2.open(file2);
-		resultF.open(resultFile);
-		int ii;
+		f1.open(file1, std::ios::binary);
+		f2.open(file2, std::ios::binary);
+		resultF.open(resultFile, std::ios::binary);
+		char ff;
 		for (int i = 0; i < 24; ++i)
 		{
-			f1 >> ii;
-			resultF << ii;
+			f1.read((char*)&ff, sizeof(ff));
+			resultF.write((char*)&ff, sizeof(ff));
 		}
-		f1.seekg(24, std::ios::cur);
+//		f1.seekg(24, std::ios::cur);
 		f2.seekg(24, std::ios::cur);
 	}
+	~Merge(){f1.close(); f2.close(); resultF.close();};
 
 private:
 	std::string fileName;
