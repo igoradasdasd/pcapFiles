@@ -9,7 +9,9 @@
 #include <stdio.h>
 #include <ios>
 #include <iostream>
-#include "./include/decoder.h"
+#include <memory>
+
+#include "include/Merge.h"
 
 
 int main()
@@ -19,7 +21,10 @@ int main()
 	std::string sourceFile2("./pcapFiles/2.pcap");
 	std::string resultFile("./pcapFiles/result.pcap");
 
-	Merge * merge = new Merge(sourceFile1, sourceFile2, resultFile );
+	std::shared_ptr<Merge> merge( new Merge(sourceFile1, sourceFile2, resultFile ) );
+	merge->work();
+
+
 /*
 	std::ifstream f11;
 
@@ -29,16 +34,17 @@ int main()
 	resultF1.open(resultFile, std::ios::binary);
 
 	char ff;
+	for (int i = 0; i < 24; ++i)
+	{
+		f11.read((char*)&ff, sizeof(ff));
+		resultF1.write((char*)&ff, sizeof(ff));
+	}
+*/
+//	merge->work();
+/*
 	f11.read((char*)&ff, sizeof(ff));
 	resultF1.write((char*)&ff, sizeof(ff));
 
-	f11.read((char*)&ff, sizeof(ff));
-	resultF1.write((char*)&ff, sizeof(ff));
-
-	f11 >> ff;
-	std::cout << (ff) << std::endl;
-	f11 >> ff;
-	std::cout << ff << std::endl;
 	/*
 	std::ofstream f;
 	f.open("./pcapFiles/1.txt");
