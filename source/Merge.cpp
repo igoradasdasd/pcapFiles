@@ -37,6 +37,11 @@ void Merge::work()
 
 	prepareWork(f1, f2, resultF1);
 	mainWork(f1, f2, resultF1);
+/*
+	f1.close();
+	f2.close();
+	resultF1.close();
+	*/
 }
 
 // подготоваливам файлы к обработке
@@ -49,19 +54,6 @@ void Merge::prepareWork(std::ifstream & f1_1, std::ifstream & f2_1, std::ofstrea
 		resultF_1.write((char*)&ff, sizeof(ff));
 	}
 	f2_1.seekg(24, std::ios::cur);
-
-
-
-	/*
-	char bufer;
-	for (int i = 0; i < 1; ++i)
-	{
-		f1.read((char*)&bufer, sizeof(bufer));
-		resultF.write((char*)&bufer, sizeof(bufer));
-	}
-*/
-//	f1.seekg(24, std::ios::cur);
-//	f2.seekg(24, std::ios::cur);
 }
 
 // основной цикл работы
@@ -74,9 +66,17 @@ void Merge::mainWork(std::ifstream & f1, std::ifstream & f2, std::ofstream & res
 
 	while( !f1.eof() && !f2.eof())
 	{
-
+		if ( compare() )
+		{
+			copy_packed(f1, result, packed_lenght_1);
+			update_data_stream(f1, packed_time_sec_1, packed_time_msec_1, packed_lenght_1);
+		}
+		else
+		{
+			copy_packed(f2, result, packed_lenght_2);
+			update_data_stream(f2, packed_time_sec_2, packed_time_msec_2, packed_lenght_2);
+		}
 	}
-
 }
 
 void Merge::update_data_stream(std::ifstream &f, uint32_t& packed_time_sec,
@@ -87,5 +87,30 @@ void Merge::update_data_stream(std::ifstream &f, uint32_t& packed_time_sec,
 	packed_time_msec = decoder(f);
 	f.seekg(4, std::ios::cur);		// переход на поле длины захваченного пакета
 	packed_lenght = decoder(f) + PACKET_HEADER_LENGHT;
+	f.seekg(-12, std::ios::cur);	// переход на начало пакета
 }
+
+// возвращает истину, если пакет потока 1 пришел раньше пакета потока 2 или в тоже время
+bool Merge::compare()
+{
+	if (packed_time_sec_1 < packed_time_sec_2)
+		return true;
+	if (packed_time_sec_1 > packed_time_sec_2)
+		return false;
+	if  (packed_time_msec_1 <= packed_time_msec_2)
+		return true;
+	else
+		return false;
+}
+
+void Merge::copy_packed(std::ifstream & f, std::ofstream & result, uint32_t packed_lenght)
+{
+	char ff;
+	for (uint32_t i = 0; i < packed_lenght; ++i)
+	{
+		f.read((char*)&ff, sizeof(ff));
+		result.write((char*)&ff, sizeof(ff));
+	}
+}
+
 
