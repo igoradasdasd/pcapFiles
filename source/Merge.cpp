@@ -63,8 +63,8 @@ void Merge::mainWork(std::ifstream & f1, std::ifstream & f2, std::ofstream & res
 		update_data_stream(f1, packed_time_sec_1, packed_time_msec_1, packed_lenght_1);
 	if (!f2.eof())
 		update_data_stream(f2, packed_time_sec_2, packed_time_msec_2, packed_lenght_2);
-
-	while( !f1.eof() && !f2.eof())
+	// пока не закончится один из исходных файлов
+	while( f1.tellg()>0 && f2.tellg()>0)
 	{
 		if ( compare() )
 		{
@@ -77,12 +77,24 @@ void Merge::mainWork(std::ifstream & f1, std::ifstream & f2, std::ofstream & res
 			update_data_stream(f2, packed_time_sec_2, packed_time_msec_2, packed_lenght_2);
 		}
 	}
+	// при необходимости, копируем остатки
+	while (f1.tellg() > 0)
+	{
+		copy_packed(f1, result, packed_lenght_1);
+		update_data_stream(f1, packed_time_sec_1, packed_time_msec_1, packed_lenght_1);
+	}
+
+	while (f2.tellg() > 0)
+	{
+		copy_packed(f2, result, packed_lenght_2);
+		update_data_stream(f2, packed_time_sec_2, packed_time_msec_2, packed_lenght_2);
+	}
 }
 
 void Merge::update_data_stream(std::ifstream &f, uint32_t& packed_time_sec,
 						uint32_t& packed_time_msec, uint32_t& packed_lenght)
 {
-	packed_time_sec = decoder(f);
+	packed_time_sec = decoder(f);	// считываем секунды
 	f.seekg(4, std::ios::cur);		// переход на поле мс
 	packed_time_msec = decoder(f);
 	f.seekg(4, std::ios::cur);		// переход на поле длины захваченного пакета
@@ -110,6 +122,8 @@ void Merge::copy_packed(std::ifstream & f, std::ofstream & result, uint32_t pack
 	{
 		f.read((char*)&ff, sizeof(ff));
 		result.write((char*)&ff, sizeof(ff));
+		if ( f.tellg() < 0)
+			break;
 	}
 }
 
