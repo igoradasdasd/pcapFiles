@@ -37,11 +37,11 @@ void Merge::work()
 
 	prepareWork(f1, f2, resultF1);
 	mainWork(f1, f2, resultF1);
-/*
+
 	f1.close();
 	f2.close();
 	resultF1.close();
-	*/
+
 }
 
 // подготоваливам файлы к обработке
@@ -87,7 +87,7 @@ void Merge::update_data_stream(std::ifstream &f, uint32_t& packed_time_sec,
 	packed_time_msec = decoder(f);
 	f.seekg(4, std::ios::cur);		// переход на поле длины захваченного пакета
 	packed_lenght = decoder(f) + PACKET_HEADER_LENGHT;
-	f.seekg(-12, std::ios::cur);	// переход на начало пакета
+	f.seekg(-8, std::ios::cur);	// переход на начало пакета
 }
 
 // возвращает истину, если пакет потока 1 пришел раньше пакета потока 2 или в тоже время
