@@ -57,9 +57,9 @@ void Merge::prepareWork(std::ifstream & f1_1, std::ifstream & f2_1, std::ofstrea
 // основной цикл работы
 void Merge::mainWork(std::ifstream & f1, std::ifstream & f2, std::ofstream & result)
 {
-	if (!f1.eof())
+	if (f1.tellg()>0)
 		update_data_stream(f1, packed_time_sec_1, packed_time_msec_1, packed_lenght_1);
-	if (!f2.eof())
+	if (f2.tellg()>0)
 		update_data_stream(f2, packed_time_sec_2, packed_time_msec_2, packed_lenght_2);
 	// пока не закончится один из исходных файлов
 	while( f1.tellg()>0 && f2.tellg()>0)
