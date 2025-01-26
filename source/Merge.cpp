@@ -21,8 +21,6 @@ uint32_t Merge::decoder(std::ifstream & f1_1)
 	b = static_cast<uint8_t>(ff);
 	tt += static_cast<uint32_t>( b << 8*i);
 	}
-	// возвращаем поток в исходное состяоние
-	f1_1.seekg(-4, std::ios::cur);
 	return tt;
 }
 
@@ -95,11 +93,9 @@ void Merge::update_data_stream(std::ifstream &f, uint32_t& packed_time_sec,
 						uint32_t& packed_time_msec, uint32_t& packed_lenght)
 {
 	packed_time_sec = decoder(f);	// считываем секунды
-	f.seekg(4, std::ios::cur);		// переход на поле мс
 	packed_time_msec = decoder(f);
-	f.seekg(4, std::ios::cur);		// переход на поле длины захваченного пакета
 	packed_lenght = decoder(f) + PACKET_HEADER_LENGHT;
-	f.seekg(-8, std::ios::cur);	// переход на начало пакета
+	f.seekg(-12, std::ios::cur);	// переход на начало пакета
 }
 
 // возвращает истину, если пакет потока 1 пришел раньше пакета потока 2 или в тоже время
