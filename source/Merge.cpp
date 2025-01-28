@@ -7,8 +7,6 @@
 
 #include "../include/Merge.h"
 
-#define PACKET_HEADER_LENGHT 16		// длина заголовка пакета в байтах
-
 // для декодирования 32 бит после чтения
 uint32_t Merge::decoding_from_big_endian(std::ifstream & f1_1)
 {
@@ -72,7 +70,7 @@ void Merge::mainWork(std::ifstream & f1, std::ifstream & f2, std::ofstream & res
 		else
 		{
 			write_packet(result, packet_from_file2);
-			read_packet(f2, packet_from_file1);
+			read_packet(f2, packet_from_file2);
 		}
 	}
 	// при необходимости, копируем остатки
@@ -100,10 +98,11 @@ void Merge::read_packet(std::ifstream &f, Packet &p)
 	p.Packet_Data_variable_length = new uint8_t[p.Captured_Packet_Length];
 
 	char ff;
-	for (uint32_t i = 0; i < p.Captured_Packet_Length; ++i, ++p.Packet_Data_variable_length)
+	uint8_t* loc_ptr = p.Packet_Data_variable_length;
+	for (uint32_t i = 0; i < p.Captured_Packet_Length; ++i, ++loc_ptr)
 	{
 		f.read((char*)&ff, sizeof(ff));
-		*p.Packet_Data_variable_length = ff;
+		*loc_ptr = ff;
 		if ( f.tellg() < 0)
 			break;
 	}
@@ -116,7 +115,6 @@ void Merge::write_packet(std::ofstream &f, Packet &p)
 	write_uint_32(f, p.Timestamp_microseconds_or_nanoseconds);
 	write_uint_32(f, p.Captured_Packet_Length);
 	write_uint_32(f, p.Original_Packet_Length);
-	p.Packet_Data_variable_length = new uint8_t[p.Captured_Packet_Length];
 
 	uint8_t* loc_ptr = p.Packet_Data_variable_length;
 	char ff;
@@ -137,7 +135,6 @@ void Merge::write_uint_32(std::ofstream &f, uint32_t data)
 	}
 }
 
-
 // возвращает истину, если пакет потока 1 пришел раньше пакета потока 2 или в тоже время
 bool Merge::time_packet_compare()
 {
@@ -151,18 +148,5 @@ bool Merge::time_packet_compare()
 		return false;
 }
 
-
-
-void Merge::copy_packed(std::ifstream & f, std::ofstream & result, uint32_t packed_lenght)
-{
-	char ff;
-	for (uint32_t i = 0; i < packed_lenght; ++i)
-	{
-		f.read((char*)&ff, sizeof(ff));
-		result.write((char*)&ff, sizeof(ff));
-		if ( f.tellg() < 0)
-			break;
-	}
-}
 
 
