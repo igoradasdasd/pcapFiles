@@ -13,7 +13,6 @@
 
 #include "include/Merge.h"
 
-
 int main()
 {
 	// входные данные
@@ -23,6 +22,8 @@ int main()
 
 	std::shared_ptr<Merge> merge( new Merge(sourceFile1, sourceFile2, resultFile ) );
 	merge->work();
+
+	Packet pa;
 }
 
 

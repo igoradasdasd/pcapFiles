@@ -10,7 +10,7 @@
 #define PACKET_HEADER_LENGHT 16		// длина заголовка пакета в байтах
 
 // для декодирования 32 бит после чтения
-uint32_t Merge::decoder(std::ifstream & f1_1)
+uint32_t Merge::decoding_from_big_endian(std::ifstream & f1_1)
 {
 	uint32_t tt = 0;
 	uint8_t b;
@@ -58,58 +58,100 @@ void Merge::prepareWork(std::ifstream & f1_1, std::ifstream & f2_1, std::ofstrea
 void Merge::mainWork(std::ifstream & f1, std::ifstream & f2, std::ofstream & result)
 {
 	if (f1.tellg()>0)
-		update_data_stream(f1, packed_time_sec_1, packed_time_msec_1, packed_lenght_1);
+		read_packet(f1, packet_from_file1);
 	if (f2.tellg()>0)
-		update_data_stream(f2, packed_time_sec_2, packed_time_msec_2, packed_lenght_2);
+		read_packet(f2, packet_from_file2);
 	// пока не закончится один из исходных файлов
 	while( f1.tellg()>0 && f2.tellg()>0)
 	{
-		if ( compare() )
+		if ( time_packet_compare() )
 		{
-			copy_packed(f1, result, packed_lenght_1);
-			update_data_stream(f1, packed_time_sec_1, packed_time_msec_1, packed_lenght_1);
+			write_packet(result, packet_from_file1);
+			read_packet(f1, packet_from_file1);
 		}
 		else
 		{
-			copy_packed(f2, result, packed_lenght_2);
-			update_data_stream(f2, packed_time_sec_2, packed_time_msec_2, packed_lenght_2);
+			write_packet(result, packet_from_file2);
+			read_packet(f2, packet_from_file1);
 		}
 	}
 	// при необходимости, копируем остатки
 	while (f1.tellg() > 0)
 	{
-		copy_packed(f1, result, packed_lenght_1);
-		update_data_stream(f1, packed_time_sec_1, packed_time_msec_1, packed_lenght_1);
+		write_packet(result, packet_from_file1);
+		read_packet(f1, packet_from_file1);
 	}
 
 	while (f2.tellg() > 0)
 	{
-		copy_packed(f2, result, packed_lenght_2);
-		update_data_stream(f2, packed_time_sec_2, packed_time_msec_2, packed_lenght_2);
+		write_packet(result, packet_from_file2);
+		read_packet(f2, packet_from_file1);
 	}
 }
 
-void Merge::update_data_stream(std::ifstream &f, uint32_t& packed_time_sec,
-						uint32_t& packed_time_msec, uint32_t& packed_lenght)
+//считываем пакет
+void Merge::read_packet(std::ifstream &f, Packet &p)
 {
-	packed_time_sec = decoder(f);	// считываем секунды
-	packed_time_msec = decoder(f);
-	packed_lenght = decoder(f) + PACKET_HEADER_LENGHT;
-	f.seekg(-12, std::ios::cur);	// переход на начало пакета
+	delete [] p.Packet_Data_variable_length;
+	p.Timestamp_seconds = decoding_from_big_endian(f);
+	p.Timestamp_microseconds_or_nanoseconds = decoding_from_big_endian(f);
+	p.Captured_Packet_Length = decoding_from_big_endian(f);
+	p.Original_Packet_Length = decoding_from_big_endian(f);
+	p.Packet_Data_variable_length = new uint8_t[p.Captured_Packet_Length];
+
+	char ff;
+	for (uint32_t i = 0; i < p.Captured_Packet_Length; ++i, ++p.Packet_Data_variable_length)
+	{
+		f.read((char*)&ff, sizeof(ff));
+		*p.Packet_Data_variable_length = ff;
+		if ( f.tellg() < 0)
+			break;
+	}
 }
 
-// возвращает истину, если пакет потока 1 пришел раньше пакета потока 2 или в тоже время
-bool Merge::compare()
+//записываем пакет
+void Merge::write_packet(std::ofstream &f, Packet &p)
 {
-	if (packed_time_sec_1 < packed_time_sec_2)
+	write_uint_32(f, p.Timestamp_seconds);
+	write_uint_32(f, p.Timestamp_microseconds_or_nanoseconds);
+	write_uint_32(f, p.Captured_Packet_Length);
+	write_uint_32(f, p.Original_Packet_Length);
+	p.Packet_Data_variable_length = new uint8_t[p.Captured_Packet_Length];
+
+	uint8_t* loc_ptr = p.Packet_Data_variable_length;
+	char ff;
+	for (uint32_t i = 0; i < p.Captured_Packet_Length; ++i, ++loc_ptr)
+	{
+		ff = *loc_ptr;
+		f.write((char*)&ff, sizeof(ff));
+	}
+}
+
+void Merge::write_uint_32(std::ofstream &f, uint32_t data)
+{
+	char ff;
+	for (int i = 3; i >= 0; --i)
+	{
+		ff = (data >> (i*8)) & 0xff;
+		f.write((char*)&ff, sizeof(ff));
+	}
+}
+
+
+// возвращает истину, если пакет потока 1 пришел раньше пакета потока 2 или в тоже время
+bool Merge::time_packet_compare()
+{
+	if (packet_from_file1.Timestamp_seconds < packet_from_file2.Timestamp_seconds)
 		return true;
-	if (packed_time_sec_1 > packed_time_sec_2)
+	if (packet_from_file1.Timestamp_seconds > packet_from_file2.Timestamp_seconds)
 		return false;
-	if  (packed_time_msec_1 <= packed_time_msec_2)
+	if  (packet_from_file1.Timestamp_microseconds_or_nanoseconds <= packet_from_file2.Timestamp_microseconds_or_nanoseconds)
 		return true;
 	else
 		return false;
 }
+
+
 
 void Merge::copy_packed(std::ifstream & f, std::ofstream & result, uint32_t packed_lenght)
 {

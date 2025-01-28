@@ -13,6 +13,8 @@
 #include <iostream>
 #include <cstdint>
 
+#include "Packet.h"
+
 class Merge
 {
 public:
@@ -24,12 +26,18 @@ public:
 private:
 	void prepareWork(std::ifstream & f1, std::ifstream & f2, std::ofstream & result);
 	void mainWork(std::ifstream & f1, std::ifstream & f2, std::ofstream & result);
-	uint32_t decoder(std::ifstream & f1);
+	uint32_t decoding_from_big_endian(std::ifstream & f1);
+	uint32_t coding_from_big_endian(Packet &p);
+	void read_packet(std::ifstream &f, Packet &p);
+	void write_packet(std::ofstream &f, Packet &p);
+	bool time_packet_compare();
+	void write_uint_32(std::ofstream &f, uint32_t data);
+
+//-----------------------
 	void update_data_stream(std::ifstream &f, uint32_t& packed_time_sec,
 							uint32_t& packed_time_msec, uint32_t& packed_lenght);
-
-	bool compare();
 	void copy_packed(std::ifstream & f, std::ofstream & result, uint32_t packed_lenght);
+//-----------------------
 
 	uint32_t packed_time_sec_1;		// время пакета первого потока в секундах
 	uint32_t packed_time_sec_2;
@@ -42,6 +50,8 @@ private:
 	std::string sfile2;
 	std::string resultF;
 
+	Packet packet_from_file1;
+	Packet packet_from_file2;
 };
 
 
