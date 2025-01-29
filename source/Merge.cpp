@@ -97,15 +97,7 @@ void Merge::read_packet(std::ifstream &f, Packet &p)
 	p.Original_Packet_Length = decoding_from_big_endian(f);
 	p.Packet_Data_variable_length = new uint8_t[p.Captured_Packet_Length];
 
-	char ff;
-	uint8_t* loc_ptr = p.Packet_Data_variable_length;
-	for (uint32_t i = 0; i < p.Captured_Packet_Length; ++i, ++loc_ptr)
-	{
-		f.read((char*)&ff, sizeof(ff));
-		*loc_ptr = ff;
-		if ( f.tellg() < 0)
-			break;
-	}
+	f.read((char*)p.Packet_Data_variable_length, p.Captured_Packet_Length);
 }
 
 //записываем пакет
@@ -116,13 +108,7 @@ void Merge::write_packet(std::ofstream &f, Packet &p)
 	write_uint_32(f, p.Captured_Packet_Length);
 	write_uint_32(f, p.Original_Packet_Length);
 
-	uint8_t* loc_ptr = p.Packet_Data_variable_length;
-	char ff;
-	for (uint32_t i = 0; i < p.Captured_Packet_Length; ++i, ++loc_ptr)
-	{
-		ff = *loc_ptr;
-		f.write((char*)&ff, sizeof(ff));
-	}
+	f.write((char*)p.Packet_Data_variable_length, p.Captured_Packet_Length);
 }
 
 void Merge::write_uint_32(std::ofstream &f, uint32_t data)
