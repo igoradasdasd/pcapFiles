@@ -26,7 +26,7 @@ public:
 private:
 	void prepareWork(std::ifstream & f1, std::ifstream & f2, std::ofstream & result);
 	void mainWork(std::ifstream & f1, std::ifstream & f2, std::ofstream & result);
-	void decoding_from_big_endian(uint32_t & in);
+	uint32_t decoding_from_big_endian(uint32_t & in);
 	void read_packet(std::ifstream &f, Packet &p);
 	void write_packet(std::ofstream &f, Packet &p);
 	bool time_packet_compare();

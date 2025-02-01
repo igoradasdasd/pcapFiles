@@ -10,7 +10,7 @@
 #define FILE_HEADER_LENGTH 24
 
 // для декодирования 32 бит после чтения
-void Merge::decoding_from_big_endian(uint32_t & in)
+uint32_t Merge::decoding_from_big_endian(uint32_t & in)
 {
 	uint32_t tt = 0;
 	uint8_t b;
@@ -21,7 +21,7 @@ void Merge::decoding_from_big_endian(uint32_t & in)
 		b = static_cast<uint8_t>(ff);
 		tt += static_cast<uint32_t>( b << 8*y);
 	}
-	in = tt;
+	return tt;
 }
 
 void Merge::work()
@@ -39,7 +39,6 @@ void Merge::work()
 	f1.close();
 	f2.close();
 	resultF1.close();
-
 }
 
 // подготоваливам файлы к обработке
@@ -95,38 +94,32 @@ void Merge::read_packet(std::ifstream &f, Packet &p)
 
 	f.read((char*)&p.Timestamp_seconds, sizeof(uint32_t) * 4);
 
-	decoding_from_big_endian(p.Timestamp_seconds);
-	decoding_from_big_endian(p.Timestamp_microseconds_or_nanoseconds);
-	decoding_from_big_endian(p.Captured_Packet_Length);
-	decoding_from_big_endian(p.Original_Packet_Length);
+	p.Timestamp_seconds_v = decoding_from_big_endian(p.Timestamp_seconds);
+	p.Timestamp_microseconds_or_nanoseconds_v = decoding_from_big_endian(p.Timestamp_microseconds_or_nanoseconds);
+	p.Captured_Packet_Length_v = decoding_from_big_endian(p.Captured_Packet_Length);
+	p.Original_Packet_Length_v = decoding_from_big_endian(p.Original_Packet_Length);
 
-	p.Packet_Data_variable_length = new uint8_t[p.Captured_Packet_Length];
+	p.Packet_Data_variable_length = new uint8_t[p.Captured_Packet_Length_v];
 
-	f.read((char*)p.Packet_Data_variable_length, p.Captured_Packet_Length);
+	f.read((char*)p.Packet_Data_variable_length, p.Captured_Packet_Length_v);
 }
 
 //записываем пакет
 void Merge::write_packet(std::ofstream &f, Packet &p)
 {
-	uint32_t saved_Captured_Packet_Length = p.Captured_Packet_Length;
-	decoding_from_big_endian(p.Timestamp_seconds);
-	decoding_from_big_endian(p.Timestamp_microseconds_or_nanoseconds);
-	decoding_from_big_endian(p.Captured_Packet_Length);
-	decoding_from_big_endian(p.Original_Packet_Length);
-
 	f.write((char*)&p.Timestamp_seconds, sizeof(uint32_t) * 4);
 
-	f.write((char*)p.Packet_Data_variable_length, saved_Captured_Packet_Length);
+	f.write((char*)p.Packet_Data_variable_length, p.Captured_Packet_Length_v);
 }
 
 // возвращает истину, если пакет потока 1 пришел раньше пакета потока 2 или в тоже время
 bool Merge::time_packet_compare()
 {
-	if (packet_from_file1.Timestamp_seconds < packet_from_file2.Timestamp_seconds)
+	if (packet_from_file1.Timestamp_seconds_v < packet_from_file2.Timestamp_seconds_v)
 		return true;
-	if (packet_from_file1.Timestamp_seconds > packet_from_file2.Timestamp_seconds)
+	if (packet_from_file1.Timestamp_seconds_v > packet_from_file2.Timestamp_seconds_v)
 		return false;
-	if  (packet_from_file1.Timestamp_microseconds_or_nanoseconds <= packet_from_file2.Timestamp_microseconds_or_nanoseconds)
+	if  (packet_from_file1.Timestamp_microseconds_or_nanoseconds_v <= packet_from_file2.Timestamp_microseconds_or_nanoseconds_v)
 		return true;
 	else
 		return false;
